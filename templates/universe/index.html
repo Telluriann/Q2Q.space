@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q2Q.space</title>
+    <!-- Tailwind CSS (CDN configuration for ultra-fast load) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        dark: '#030508',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #030508;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .glass-panel {
+            background: rgba(20, 20, 30, 0.5);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Hidden initially, GSAP will handle them */
+        .reveal-text,
+        .reveal-img {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #030508;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334;
+            border-radius: 10px;
+        }
+
+        /* Logo Reveal Animations - 12s Continuous Cycle */
+        @keyframes layerFull {
+
+            0%,
+            60% {
+                opacity: 1;
+            }
+
+            62%,
+            95% {
+                opacity: 0;
+            }
+
+            98%,
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes layerShort {
+
+            0%,
+            60% {
+                opacity: 0;
+            }
+
+            62%,
+            95% {
+                opacity: 1;
+            }
+
+            98%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes cycleUantum {
+            0% {
+                max-width: 0;
+                opacity: 0;
+            }
+
+            1% {
+                opacity: 1;
+            }
+
+            5%,
+            80% {
+                max-width: 250px;
+                opacity: 1;
+            }
+
+            90%,
+            100% {
+                max-width: 0;
+                opacity: 0;
+            }
+        }
+
+        @keyframes cycleTo {
+
+            0%,
+            10% {
+                opacity: 0;
+            }
+
+            15%,
+            80% {
+                opacity: 1;
+            }
+
+            90%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes cycleQ2 {
+
+            0%,
+            15% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+
+            18% {
+                opacity: 1;
+                transform: scale(1.1);
+            }
+
+            20%,
+            80% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            90%,
+            100% {
+                opacity: 0;
+                transform: scale(0.5);
+            }
+        }
+
+        @keyframes cycleUasar {
+
+            0%,
+            20% {
+                max-width: 0;
+                opacity: 0;
+            }
+
+            21% {
+                opacity: 1;
+            }
+
+            25%,
+            80% {
+                max-width: 250px;
+                opacity: 1;
+            }
+
+            90%,
+            100% {
+                max-width: 0;
+                opacity: 0;
+            }
+        }
+
+        @keyframes cycleSpace {
+
+            0%,
+            25% {
+                opacity: 0;
+            }
+
+            30%,
+            80% {
+                opacity: 1;
+            }
+
+            90%,
+            100% {
+                opacity: 0;
+            }
+        }
+
+        .layer-full {
+            animation: layerFull 12s infinite;
+        }
+
+        .layer-short {
+            opacity: 0;
+            animation: layerShort 12s infinite;
+        }
+
+        .logo-uantum {
+            max-width: 0;
+            opacity: 0;
+            animation: cycleUantum 12s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        }
+
+        .logo-to {
+            opacity: 0;
+            animation: cycleTo 12s ease-out infinite;
+        }
+
+        .logo-q2 {
+            opacity: 0;
+            animation: cycleQ2 12s cubic-bezier(0.175, 0.885, 0.32, 1.275) infinite;
+        }
+
+        .logo-uasar {
+            max-width: 0;
+            opacity: 0;
+            animation: cycleUasar 12s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+        }
+
+        .logo-space {
+            opacity: 0;
+            animation: cycleSpace 12s ease-out infinite;
+        }
+    </style>
+</head>
+
+<body class="font-sans overflow-x-hidden selection:bg-blue-500 selection:text-white">
+
+    <!-- Fixed Header -->
+    <header
+        class="fixed top-0 w-full z-50 px-8 py-6 flex justify-between items-center bg-gradient-to-b from-[#030508] via-[#030508]/80 to-transparent pointer-events-none">
+
+        <h1 class="pointer-events-auto flex items-baseline font-bold uppercase select-none drop-shadow-lg">
+            <!-- Static Q -->
+            <span class="text-blue-400 text-3xl md:text-4xl drop-shadow-[0_0_10px_rgba(96,165,250,0.6)]">Q</span>
+
+            <div class="grid items-baseline">
+
+                <!-- FULL TEXT LAYER -->
+                <div class="col-start-1 row-start-1 flex items-baseline layer-full">
+                    <span
+                        class="logo-uantum overflow-hidden inline-block align-bottom whitespace-nowrap text-white/90 text-xl md:text-2xl tracking-[0.15em]">UANTUM</span>
+                    <span class="logo-to text-slate-400 text-xs md:text-sm tracking-widest mx-3">TO</span>
+                    <span
+                        class="logo-q2 text-indigo-400 text-3xl md:text-4xl drop-shadow-[0_0_10px_rgba(129,140,248,0.6)] inline-block origin-bottom">Q</span>
+                    <span
+                        class="logo-uasar overflow-hidden inline-block align-bottom whitespace-nowrap text-white/90 text-xl md:text-2xl tracking-[0.15em]">UASAR</span>
+                    <span class="logo-space text-slate-500 text-xs md:text-sm tracking-[0.3em] ml-3">.SPACE</span>
+                </div>
+
+                <!-- SHORT TEXT LAYER -->
+                <div class="col-start-1 row-start-1 flex items-baseline layer-short pointer-events-none">
+                    <span class="text-white/90 text-xl md:text-2xl tracking-[0.2em] ml-1">2</span>
+                    <span
+                        class="text-indigo-400 text-3xl md:text-4xl drop-shadow-[0_0_10px_rgba(129,140,248,0.6)] ml-1">Q</span>
+                    <span class="text-slate-500 text-xs md:text-sm tracking-[0.3em] ml-2">.SPACE</span>
+                </div>
+
+            </div>
+        </h1>
+
+        <p class="hidden md:block text-slate-400 text-xs tracking-widest uppercase">Scroll to Discover</p>
+    </header>
+
+    <main class="relative bg-dark">
+        <!-- Loop through objects injected from Django -->
+        {% for object in objects %}
+
+        <section
+            class="section-panel relative min-h-screen w-full flex flex-col justify-center items-center px-6 py-24 z-10">
+
+            <!-- Soft dynamic glow behind the object based on its base_color -->
+            <div
+                class="absolute inset-0 opacity-30 blur-[100px] -z-10 pointer-events-none flex items-center justify-center">
+                <div class="w-[30vw] h-[30vw] rounded-full"
+                    style="background: radial-gradient(circle, {{ object.base_color }} 0%, transparent 70%);"></div>
+            </div>
+
+            <div class="max-w-7xl w-full grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
+
+                <!-- Imagery (Left on LG,Top on Mobile) -->
+                <div
+                    class="lg:col-span-6 order-1 lg:order-none reveal-img w-full h-[40vh] sm:h-[50vh] lg:h-[75vh] rounded-[2rem] overflow-hidden shadow-2xl relative border border-slate-700/50 group">
+                    <img src="{{ object.image_url }}" alt="{{ object.name }}"
+                        class="parallax-img absolute inset-[-10%] w-[120%] h-[120%] max-w-[120%] object-cover object-center filter brightness-90 group-hover:brightness-100 transition-all duration-1000">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
+                </div>
+
+                <!-- Cosmic Data Panel (Right on LG, Bottom on Mobile) -->
+                <div class="lg:col-span-6 order-2 lg:order-none reveal-text glass-panel p-8 md:p-12 relative">
+
+                    <div class="mb-8">
+                        <span
+                            class="inline-block px-3 py-1 mb-4 rounded-full bg-slate-800/80 border border-slate-600/50 text-xs font-semibold tracking-widest text-slate-300 uppercase shadow-inner">
+                            Level {{ forloop.counter }}: {{ object.object_type }}
+                        </span>
+                        <h2
+                            class="text-5xl lg:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-500 mb-2 filter drop-shadow-sm">
+                            {{ object.name }}
+                        </h2>
+                    </div>
+
+                    <!-- Statistics Grid -->
+                    <div
+                        class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 bg-black/40 p-6 rounded-2xl border border-white/5 backdrop-blur-md">
+                        <div>
+                            <p class="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4">
+                                    </path>
+                                </svg>
+                                Scale
+                            </p>
+                            <p class="text-lg md:text-xl font-semibold text-slate-100">{{ object.size_description }}</p>
+                        </div>
+                        <div>
+                            <p class="text-slate-500 text-xs uppercase tracking-widest mb-1 flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z">
+                                    </path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                Distance
+                            </p>
+                            <p class="text-lg md:text-xl font-semibold text-slate-100">{{ object.distance_from_earth }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Narrative Text -->
+                    <div class="space-y-6">
+                        <p class="text-slate-300 text-lg leading-relaxed font-light">
+                            {{ object.description }}
+                        </p>
+
+                        {% if object.comparison %}
+                        <div class="relative pl-6 py-2">
+                            <!-- Custom glowing border indicator -->
+                            <div
+                                class="absolute left-0 top-0 bottom-0 w-1 rounded-full bg-gradient-to-b from-blue-400 to-indigo-600 shadow-[0_0_10px_rgba(96,165,250,0.5)]">
+                            </div>
+                            <p class="text-blue-200/90 text-[1.05rem] italic leading-relaxed">
+                                "{{ object.comparison }}"
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Down Arrow Indicator (Except last slide) -->
+            {% if not forloop.last %}
+            <div
+                class="absolute bottom-6 md:bottom-12 left-1/2 transform -translate-x-1/2 flex flex-col items-center animate-bounce text-slate-500/70">
+                <span class="text-[0.65rem] uppercase tracking-[0.3em] mb-3 font-semibold">Scale Up</span>
+                <svg class="w-5 h-5 opacity-80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+                </svg>
+            </div>
+            {% endif %}
+
+        </section>
+
+        {% endfor %}
+
+    </main>
+
+    <!-- Scripts: GSAP + ScrollTrigger -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="/static/universe/js/scroll_animations.js"></script>
+
+</body>
+
+</html>
