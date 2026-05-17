@@ -1,8 +1,8 @@
 import * as THREE from 'three'
 
 /** Earth: invisible in normal view; grows into a clear sphere only as camera gets close */
-const EARTH_RADIUS = 0.018
-const EARTH_DISTANCE = 0.82
+const EARTH_RADIUS = 0.005
+const EARTH_DISTANCE_FROM_SUN = 0.2
 
 /** Equirectangular Earth-like texture: blue oceans, simplified continents (no external images) */
 function createEarthTexture(): THREE.CanvasTexture {
@@ -79,7 +79,6 @@ function createEarthTexture(): THREE.CanvasTexture {
 export function createEarth(): THREE.Group {
   const group = new THREE.Group()
   group.name = 'Earth'
-  group.scale.setScalar(0)
 
   const geometry = new THREE.SphereGeometry(EARTH_RADIUS, 48, 32)
   const material = new THREE.MeshStandardMaterial({
@@ -102,18 +101,14 @@ export function createEarth(): THREE.Group {
   glow.name = 'EarthGlow'
   group.add(glow)
 
-  group.position.set(EARTH_DISTANCE, 0, 0.012)
+  group.position.set(EARTH_DISTANCE_FROM_SUN, 0, 0)
   return group
-}
-
-export function getEarthDistance(): number {
-  return EARTH_DISTANCE
 }
 
 /** Scale factor 0 (invisible) when far, 1 (full) when close. Smooth transition. */
 export function earthScaleFromDistance(distance: number): number {
-  const far = 2.4
-  const near = 0.45
+  const far = 0.5
+  const near = 0.05
   if (distance >= far) return 0
   if (distance <= near) return 1
   const t = (far - distance) / (far - near)

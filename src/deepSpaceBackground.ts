@@ -1,23 +1,35 @@
 import * as THREE from 'three'
 
 /**
- * Loads a high-resolution photographic deep space background (e.g., Milky Way panorama)
- * as requested by the user. Place 'milkyway.jpg' in the public/ folder.
+ * Creates a massive skybox sphere using the high-resolution Milky Way panorama.
+ * This allows us to dynamically fade out the background when zooming out to intergalactic scales.
  */
-export function createDeepSpaceBackground(): THREE.Texture {
+export function createDeepSpaceBackgroundMesh(): THREE.Mesh {
   const loader = new THREE.TextureLoader()
   
-  // Load the Milky Way panorama from the public folder.
-  // For best results, it should be an equirectangular projection image.
-  const tex = loader.load('/milkyway.jpg', (loadedTex) => {
-    // Set correct color space for photos
+  // Skybox sphere needs to be massive but within the camera's far plane.
+  const geometry = new THREE.SphereGeometry(15000, 64, 64)
+  
+  const material = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    side: THREE.BackSide, // Render on the inside of the sphere
+    transparent: true,
+    opacity: 1.0,
+    depthWrite: false
+  })
+
+  // Load the Milky Way panorama
+  loader.load('/milkyway.jpg', (loadedTex) => {
     loadedTex.colorSpace = THREE.SRGBColorSpace
-    // Improve filtering for large panoramas mapping to the screen
     loadedTex.minFilter = THREE.LinearFilter
     loadedTex.magFilter = THREE.LinearFilter
+    
+    material.map = loadedTex
+    material.needsUpdate = true
   })
   
-  // Set mapping immediately so Three.js knows to treat it as a skybox/environment map
-  tex.mapping = THREE.EquirectangularReflectionMapping
-  return tex
+  const mesh = new THREE.Mesh(geometry, material)
+  mesh.name = 'DeepSpaceSkybox'
+  
+  return mesh
 }

@@ -3,20 +3,23 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js'
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
-import GUI from 'lil-gui'
+
 import { createGalaxy, defaultGalaxyParams, type GalaxyParams } from './galaxy'
 import { createStarfield } from './starfield'
-import { createDeepSpaceBackground } from './deepSpaceBackground'
+import { createDeepSpaceBackgroundMesh } from './deepSpaceBackground'
 import { createEarth, earthScaleFromDistance } from './earth'
+import { createObservableUniverse } from './universe'
+import { createGalaxyCluster } from './cluster'
+import { createSolarSystem } from './solarsystem'
+import { createHuman } from './human'
 
 export function createScene(canvas?: HTMLCanvasElement) {
   const scene = new THREE.Scene()
-  scene.background = createDeepSpaceBackground()
 
-  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000)
-  camera.position.set(0, 0, 4)
+  const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.00001, 20000)
+  camera.position.set(0, 0, 8000)
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: true })
   renderer.setSize(window.innerWidth, window.innerHeight)
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -27,27 +30,39 @@ export function createScene(canvas?: HTMLCanvasElement) {
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
   controls.dampingFactor = 0.05
-  controls.minDistance = 0.5
-  controls.maxDistance = 50 // Increased to allow zooming way out
+  controls.minDistance = 0.0001
+  controls.maxDistance = 15000
+
+  // Dynamic Background Skybox
+  const skybox = createDeepSpaceBackgroundMesh()
+  scene.add(skybox)
 
   const starfield = createStarfield()
   scene.add(starfield.points)
 
-  // Light so Earth reads as a 3D sphere
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.2)
   dirLight.position.set(2, 1, 3)
-  dirLight.target.position.set(0, 0, 0)
   scene.add(dirLight)
-  scene.add(dirLight.target)
 
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.1)
+  scene.add(ambientLight)
+
+  // 1. Observable Universe
+  const universe = createObservableUniverse()
+  scene.add(universe)
+  const universeMat = (universe.children[0] as THREE.Points).material as THREE.PointsMaterial
+
+  // 2. Galaxy Cluster
+  const cluster = createGalaxyCluster()
+  scene.add(cluster)
+  const clusterMat = (cluster.children[0] as THREE.Points).material as THREE.PointsMaterial
+
+  // 3. Local Group & Milky Way
   const galaxyParams: GalaxyParams = {
     ...defaultGalaxyParams,
     particleCount: 180000,
     armCount: 2,
   }
-
-  // Define our "Local Group"
-  const earth = createEarth()
 
   const galaxyDefinitions = [
     { name: 'Milky Way', params: { ...galaxyParams }, scale: 1, pos: [0, 0, 0], isOurs: true },
@@ -55,39 +70,61 @@ export function createScene(canvas?: HTMLCanvasElement) {
     { name: 'Triangulum', params: { ...galaxyParams, particleCount: 60000, armCount: 3, spiralPitch: 0.35, armColorYoung: new THREE.Color(0x99ddff) }, scale: 0.5, pos: [-8, -6, -20], isOurs: false },
     { name: 'Large Magellanic Cloud', params: { ...galaxyParams, particleCount: 25000, armCount: 1, bulgeFraction: 0.1 }, scale: 0.3, pos: [2, -1.5, 1.5], isOurs: false },
     { name: 'Small Magellanic Cloud', params: { ...galaxyParams, particleCount: 15000, armCount: 1, bulgeFraction: 0.05 }, scale: 0.2, pos: [1.2, -2.5, 0.8], isOurs: false },
-    { name: 'M32', params: { ...galaxyParams, particleCount: 12000, armCount: 0, bulgeFraction: 0.8 }, scale: 0.15, pos: [11.5, 4.5, -14.5], isOurs: false },
-    { name: 'NGC 205', params: { ...galaxyParams, particleCount: 18000, armCount: 2, spiralPitch: 0.4 }, scale: 0.25, pos: [12.8, 3.2, -15.5], isOurs: false },
   ]
 
-  const galaxies: { mesh: THREE.Group, def: typeof galaxyDefinitions[0], label: HTMLDivElement }[] = []
-  const labelsContainer = document.createElement('div')
-  labelsContainer.className = 'labels-container'
-  app.appendChild(labelsContainer)
+  const galaxies: { mesh: THREE.Group, def: typeof galaxyDefinitions[0] }[] = []
+  let milkyWayMesh: THREE.Group | null = null
 
   galaxyDefinitions.forEach(def => {
     const mesh = createGalaxy({ params: def.params, scale: def.scale, position: def.pos as [number, number, number] })
     scene.add(mesh)
-
-    // Add Earth specifically to the Milky Way
-    if (def.isOurs) {
-      ; (mesh.children[0] as THREE.Object3D).add(earth)
-    }
-
-    // Create 2D HTML Label
-    const label = document.createElement('div')
-    label.className = `galaxy-label ${def.isOurs ? 'milky-way' : ''}`
-    label.innerText = def.name
-    labelsContainer.appendChild(label)
-
-    galaxies.push({ mesh, def, label })
+    galaxies.push({ mesh, def })
+    if (def.isOurs) milkyWayMesh = mesh
   })
 
-  // Specific "You are here" label for Earth
-  const earthLabel = document.createElement('div')
-  earthLabel.className = 'earth-label'
-  earthLabel.innerText = 'You are here'
-  labelsContainer.appendChild(earthLabel)
+  // 4. Solar System & Sun
+  const solarSystem = createSolarSystem()
+  if (milkyWayMesh) {
+    ; (milkyWayMesh.children[0] as THREE.Object3D).add(solarSystem)
+  }
 
+  // 5. Earth
+  const earth = createEarth()
+  solarSystem.add(earth)
+
+  // 6. Human
+  const human = createHuman()
+  earth.add(human)
+
+  // --- FLOATING LABELS SETUP ---
+  const labelsContainer = document.createElement('div')
+  labelsContainer.className = 'labels-container'
+  app.appendChild(labelsContainer)
+
+  type LabelDef = { text: string, getPos: () => THREE.Vector3, element: HTMLDivElement, minVisibleDist: number, maxVisibleDist: number }
+  const floatingLabels: LabelDef[] = []
+
+  const addLabel = (text: string, getPos: () => THREE.Vector3, minD: number, maxD: number) => {
+    const el = document.createElement('div')
+    el.className = 'floating-label'
+    el.innerText = text
+    labelsContainer.appendChild(el)
+    floatingLabels.push({ text, getPos, element: el, minVisibleDist: minD, maxVisibleDist: maxD })
+  }
+
+  const tempV = new THREE.Vector3()
+  // Add labels for context
+  addLabel('Observable Universe Center', () => tempV.set(0, 0, 0), 2000, 15000)
+  addLabel('Laniakea Supercluster', () => tempV.set(0, 0, 0), 150, 1500)
+  addLabel('Local Group', () => tempV.set(0, 0, 0), 20, 100)
+  addLabel('Milky Way', () => tempV.set(0, 0, 0), 2, 15)
+  addLabel('Andromeda', () => tempV.set(12, 4, -15), 5, 40)
+  addLabel('Solar System', () => { solarSystem.getWorldPosition(tempV); return tempV }, 0.3, 5)
+  addLabel('Sun', () => { solarSystem.getWorldPosition(tempV); return tempV }, 0.05, 0.25)
+  addLabel('Earth', () => { earth.getWorldPosition(tempV); return tempV }, 0.01, 0.04)
+  addLabel('Human', () => { human.getWorldPosition(tempV); return tempV }, 0.0001, 0.005)
+
+  // --- POST-PROCESSING ---
   const composer = new EffectComposer(renderer)
   composer.addPass(new RenderPass(scene, camera))
   const bloomPass = new UnrealBloomPass(
@@ -98,60 +135,110 @@ export function createScene(canvas?: HTMLCanvasElement) {
   )
   composer.addPass(bloomPass)
 
+  // --- UI NAVIGATION ---
+  const navContainer = document.createElement('div')
+  navContainer.className = 'scale-nav'
+  navContainer.innerHTML = '<div class="scale-line"></div>'
+
+  const scales = [
+    { id: 'universe', label: 'Observable Universe', camDist: 8000, getTarget: () => tempV.set(0, 0, 0) },
+    { id: 'cluster', label: 'Local Supercluster', camDist: 800, getTarget: () => tempV.set(0, 0, 0) },
+    { id: 'localgroup', label: 'Local Group', camDist: 30, getTarget: () => tempV.set(0, 0, 0) },
+    { id: 'milkyway', label: 'Milky Way', camDist: 10, getTarget: () => tempV.set(0, 0, 0) },
+    { id: 'solarsystem', label: 'Solar System', camDist: 0.6, getTarget: () => { solarSystem.getWorldPosition(tempV); return tempV } },
+    { id: 'sun', label: 'Sun', camDist: 0.15, getTarget: () => { solarSystem.getWorldPosition(tempV); return tempV } },
+    { id: 'earth', label: 'Earth', camDist: 0.02, getTarget: () => { earth.getWorldPosition(tempV); return tempV } },
+    {
+      id: 'human',
+      label: 'Human',
+      camDist: 0.002,
+      getTarget: () => {
+        human.getWorldPosition(tempV);
+        // Shift target up to human's chest level
+        const earthPos = new THREE.Vector3();
+        earth.getWorldPosition(earthPos);
+        const upDir = new THREE.Vector3().subVectors(tempV, earthPos).normalize();
+        tempV.add(upDir.multiplyScalar(0.0012));
+        return tempV;
+      }
+    }
+  ]
+
+  let currentScaleIndex = 0
+
+  scales.forEach((scale, index) => {
+    const el = document.createElement('div')
+    el.className = `scale-step ${index === 0 ? 'active' : ''}`
+    el.innerText = scale.label
+    el.onclick = () => jumpToScale(index)
+    navContainer.appendChild(el)
+  })
+  app.appendChild(navContainer)
+
+  const cinematicControls = document.createElement('div')
+  cinematicControls.className = 'cinematic-controls'
+  cinematicControls.innerHTML = '<button class="play-btn">Play Journey</button>'
+  app.appendChild(cinematicControls)
+
+  cinematicControls.querySelector('.play-btn')!.addEventListener('click', () => {
+    state.isCinematicPlaying = !state.isCinematicPlaying
+    const btn = cinematicControls.querySelector('.play-btn')!
+    btn.innerHTML = state.isCinematicPlaying ? 'Stop Journey' : 'Play Journey'
+    if (state.isCinematicPlaying) {
+      if (currentScaleIndex === scales.length - 1) currentScaleIndex = 0 // loop back
+      jumpToScale(currentScaleIndex + 1)
+    }
+  })
+
+  // --- STATE & ANIMATION ---
   const state = {
     rotationSpeed: 0.002,
     bloomStrength: 0.8,
     bloomRadius: 0.4,
     bloomThreshold: 0.3,
-    flyToEarth() {
-      if (state.flyToEarthActive) return
-
-      earth.getWorldPosition(earthWorldPos)
-      flyStartPos.copy(camera.position)
-      flyStartTarget.copy(controls.target)
-
-      // Calculate a "view entire local group" position
-      flyZoomOutMidPos.set(0, 15, 30) // Way up and back
-      flyZoomOutMidTarget.set(2, 0, -5) // Looking roughly at center of mass
-
-      flyEndPos.copy(earthWorldPos).add(new THREE.Vector3(0.15, 0.08, 0.15))
-
-      flyPhase = 'zoom_out_local_group'
-      flyPhaseStartTime = performance.now()
-      state.flyToEarthActive = true
-    },
-    flyToEarthActive: false,
+    isTransitioning: false,
+    isCinematicPlaying: false
   }
 
-  const earthWorldPos = new THREE.Vector3()
-  const cameraTarget = new THREE.Vector3()
+  let transitionStart = 0
+  const TRANSITION_DURATION = 7000 // ms
+  const startCamPos = new THREE.Vector3()
+  const endCamPos = new THREE.Vector3()
+  const startTarget = new THREE.Vector3()
+  const endTarget = new THREE.Vector3()
 
-  const flyStartPos = new THREE.Vector3()
-  const flyStartTarget = new THREE.Vector3()
-  const flyZoomOutMidPos = new THREE.Vector3()
-  const flyZoomOutMidTarget = new THREE.Vector3()
-  const flyEndPos = new THREE.Vector3()
-  const flyResetPos = new THREE.Vector3(0, 0, 5)
-  const flyResetTarget = new THREE.Vector3(0, 0, 0)
+  function jumpToScale(index: number) {
+    if (state.isTransitioning || index < 0 || index >= scales.length) return
 
-  let flyPhase: 'zoom_out_local_group' | 'hold_out' | 'zoom_in_earth' | 'hold_earth' | 'reset' = 'zoom_out_local_group'
+    document.querySelectorAll('.scale-step').forEach((el, i) => {
+      el.classList.toggle('active', i === index)
+    })
 
-  const FLY_DURATIONS = {
-    zoom_out_local_group: 4,
-    hold_out: 2.5,
-    zoom_in_earth: 6.5, // Long dive
-    hold_earth: 4,
-    reset: 3
+    const targetData = scales[index]
+    const targetPos = targetData.getTarget()
+
+    startCamPos.copy(camera.position)
+    startTarget.copy(controls.target)
+
+    endTarget.copy(targetPos)
+
+    if (index === scales.length - 1) {
+      // Place the camera exactly in front of the human, looking at their chest
+      const forwardDir = new THREE.Vector3()
+      human.getWorldDirection(forwardDir) // Gets the human's local +Z (forward) axis
+      endCamPos.copy(endTarget).add(forwardDir.multiplyScalar(targetData.camDist))
+    } else {
+      const dir = new THREE.Vector3().subVectors(camera.position, controls.target).normalize()
+      if (dir.lengthSq() === 0) dir.set(0, 0, 1)
+      endCamPos.copy(endTarget).add(dir.multiplyScalar(targetData.camDist))
+    }
+
+    currentScaleIndex = index
+    state.isTransitioning = true
+    transitionStart = performance.now()
   }
-  let flyPhaseStartTime = 0
 
-  const gui = new GUI({ title: 'Universe' })
-  gui.add(state, 'rotationSpeed', 0, 0.01, 0.0005).name('Rotation speed')
-  const bloomFolder = gui.addFolder('Bloom')
-  bloomFolder.add(state, 'bloomStrength', 0, 2, 0.05).name('Strength')
-  bloomFolder.add(state, 'bloomRadius', 0, 1, 0.02).name('Radius')
-  bloomFolder.add(state, 'bloomThreshold', 0, 1, 0.02).name('Threshold')
-  gui.close()
+  const easeInOutCubic = (t: number) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
   window.addEventListener('resize', () => {
     const w = window.innerWidth
@@ -164,127 +251,138 @@ export function createScene(canvas?: HTMLCanvasElement) {
     bloomPass.setSize(w, h)
   })
 
-  // Overlay
-  const overlay = document.createElement('div')
-  overlay.className = 'earth-overlay'
-  overlay.innerHTML = `
-    <p class="earth-message">We are but a speck in a vast cosmic ocean. Zoom out to see our Local Group of galaxies. You can find our home here(pale blue dot)..Each galaxy has billions of stars and planets. Each dots you see on the background are stars, galaxies, and local groups of galaxies.</p>
-    <button type="button" class="earth-btn" id="find-earth">Show True Scale</button>
-  `
-  app.appendChild(overlay)
-  overlay.querySelector('#find-earth')!.addEventListener('click', () => state.flyToEarth())
-
-  const tempV = new THREE.Vector3()
-
-  // Helper to project 3D pos to 2D screen coordinate for labels
-  function updateLabelPosition(label: HTMLDivElement, worldPos: THREE.Vector3) {
-    tempV.copy(worldPos)
-    tempV.project(camera)
-
-    // Check if behind camera
-    if (tempV.z > 1) {
-      label.classList.add('hidden-label')
-      return
-    }
-
-    label.classList.remove('hidden-label')
-    const x = (tempV.x * 0.5 + 0.5) * window.innerWidth
-    const y = (-(tempV.y * 0.5) + 0.5) * window.innerHeight
-    label.style.left = `${x}px`
-    label.style.top = `${y}px`
-  }
+  const labelPos = new THREE.Vector3()
 
   return {
     update() {
-      starfield.update(performance.now() / 1000)
+      const now = performance.now()
+      starfield.update(now / 1000)
+
+      // Handle transitions
+      if (state.isTransitioning) {
+        let t = (now - transitionStart) / TRANSITION_DURATION
+        if (t >= 1) {
+          t = 1
+          state.isTransitioning = false
+          if (state.isCinematicPlaying) {
+            setTimeout(() => {
+              if (state.isCinematicPlaying) {
+                if (currentScaleIndex < scales.length - 1) {
+                  jumpToScale(currentScaleIndex + 1)
+                } else {
+                  state.isCinematicPlaying = false
+                  const btn = cinematicControls.querySelector('.play-btn')!
+                  btn.innerHTML = 'Play Journey'
+                }
+              }
+            }, 2500) // pause between steps
+          }
+        }
+        const easeT = easeInOutCubic(t)
+        camera.position.lerpVectors(startCamPos, endCamPos, easeT)
+        controls.target.lerpVectors(startTarget, endTarget, easeT)
+      }
+
       controls.update()
 
-      earth.getWorldPosition(earthWorldPos)
-      const earthDist = camera.position.distanceTo(earthWorldPos)
+      // Keep skybox centered on camera so we never reach its edge
+      skybox.position.copy(camera.position)
 
-      if (state.flyToEarthActive) {
-        const elapsed = (performance.now() - flyPhaseStartTime) / 1000
-        let t = 0
-        let currentDuration = 1
+      const distToTarget = camera.position.distanceTo(controls.target)
+      camera.near = Math.max(0.00001, distToTarget / 1000)
+      camera.far = Math.max(10, distToTarget * 10)
+      camera.updateProjectionMatrix()
 
-        if (flyPhase === 'zoom_out_local_group') {
-          currentDuration = FLY_DURATIONS.zoom_out_local_group
-          t = Math.min(1, elapsed / currentDuration)
-          const smooth = t * t * (3 - 2 * t)
-          camera.position.lerpVectors(flyStartPos, flyZoomOutMidPos, smooth)
-          cameraTarget.lerpVectors(flyStartTarget, flyZoomOutMidTarget, smooth)
-          controls.target.copy(cameraTarget)
-          if (t >= 1) { flyPhase = 'hold_out'; flyPhaseStartTime = performance.now() }
-        }
-        else if (flyPhase === 'hold_out') {
-          if (elapsed >= FLY_DURATIONS.hold_out) { flyPhase = 'zoom_in_earth'; flyPhaseStartTime = performance.now() }
-        }
-        else if (flyPhase === 'zoom_in_earth') {
-          currentDuration = FLY_DURATIONS.zoom_in_earth
-          t = Math.min(1, elapsed / currentDuration)
-          // Exponential ease-in-out for dramatic zoom
-          const smooth = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t
-          camera.position.lerpVectors(flyZoomOutMidPos, flyEndPos, smooth)
-          cameraTarget.lerpVectors(flyZoomOutMidTarget, earthWorldPos, smooth)
-          controls.target.copy(cameraTarget)
-          if (t >= 1) { flyPhase = 'hold_earth'; flyPhaseStartTime = performance.now() }
-        }
-        else if (flyPhase === 'hold_earth') {
-          cameraTarget.copy(earthWorldPos)
-          controls.target.copy(cameraTarget)
-          if (elapsed >= FLY_DURATIONS.hold_earth) {
-            flyStartPos.copy(camera.position)
-            flyStartTarget.copy(earthWorldPos)
-            flyPhase = 'reset'
-            flyPhaseStartTime = performance.now()
-          }
-        }
-        else if (flyPhase === 'reset') {
-          currentDuration = FLY_DURATIONS.reset
-          t = Math.min(1, elapsed / currentDuration)
-          const smooth = t * t * (3 - 2 * t)
-          camera.position.lerpVectors(flyStartPos, flyResetPos, smooth)
-          cameraTarget.lerpVectors(flyStartTarget, flyResetTarget, smooth)
-          controls.target.copy(cameraTarget)
-          if (t >= 1) {
-            state.flyToEarthActive = false
-            flyPhase = 'zoom_out_local_group'
-          }
-        }
+      // Fade out Deep Space Skybox outside the Milky Way
+      const skyboxMat = skybox.material as THREE.MeshBasicMaterial
+      if (distToTarget < 12) {
+        skyboxMat.opacity = 1.0
+      } else if (distToTarget < 25) {
+        skyboxMat.opacity = 1.0 - ((distToTarget - 12) / 13)
+      } else {
+        skyboxMat.opacity = 0
       }
 
-      // Update Earth visibility
-      earth.scale.setScalar(earthScaleFromDistance(earthDist))
+      // Fade out Universe and Cluster to prevent bloom whiteout at close range
+      if (distToTarget > 2000) {
+        universeMat.opacity = 0.3
+      } else if (distToTarget > 500) {
+        universeMat.opacity = 0.3 * ((distToTarget - 500) / 1500)
+      } else {
+        universeMat.opacity = 0
+      }
 
-      // Update 2D labels
+      if (distToTarget > 200) {
+        clusterMat.opacity = 0.6
+      } else if (distToTarget > 40) {
+        clusterMat.opacity = 0.6 * ((distToTarget - 40) / 160)
+      } else {
+        clusterMat.opacity = 0
+      }
+
+      // Spin and fade galaxies
       galaxies.forEach(g => {
-        g.mesh.getWorldPosition(tempV)
-        updateLabelPosition(g.label, tempV)
+        const pts = g.mesh.children[0] as THREE.Points
 
-        // Fade out galaxy labels if we get too close to them (so they don't block the view)
-        const dist = camera.position.distanceTo(tempV)
-        if (dist < g.def.scale * 2) {
-          g.label.style.opacity = '0'
-        } else {
-          g.label.style.opacity = '1'
+        // Stop spinning the galaxy if we are zooming into the Solar System or smaller.
+        // This prevents the Solar System/Earth from moving away from the camera target!
+        if (currentScaleIndex < 4 && !state.isTransitioning) {
+          pts.rotation.z += state.rotationSpeed * (1 / g.def.scale) * 0.2
+        } else if (currentScaleIndex < 4 && state.isTransitioning) {
+          pts.rotation.z += state.rotationSpeed * (1 / g.def.scale) * 0.2
+        }
+        // Wait, better logic: just stop spinning entirely if scale index >= 4
+        if (currentScaleIndex < 4) {
+          pts.rotation.z += state.rotationSpeed * (1 / g.def.scale) * 0.2
         }
 
-        // Spin each galaxy slowly
-        ; (g.mesh.children[0] as THREE.Points).rotation.z += state.rotationSpeed * (1 / g.def.scale) * 0.2
+        const mat = pts.material as THREE.PointsMaterial
+        if (distToTarget > 5) {
+          mat.opacity = 0.9
+        } else if (distToTarget > 1) {
+          mat.opacity = 0.9 * ((distToTarget - 1) / 4)
+        } else {
+          mat.opacity = 0
+        }
       })
 
-      // Update Earth Label
-      updateLabelPosition(earthLabel, earthWorldPos)
-      // Only show Earth label when quite close to the Milky Way but not so close that Earth is fully formed yet 
-      if (earthDist < 1.0) {
-        earthLabel.style.opacity = '1'
-      } else {
-        earthLabel.style.opacity = '0'
+      // Spin Earth, but stop spinning when we are targeting Earth or Human
+      // so the human stays on the correct side and doesn't spin away.
+      if (currentScaleIndex < 6) {
+        earth.rotation.y += 0.005
       }
+
+      // Update floating HTML labels
+      floatingLabels.forEach(label => {
+        const d = camera.position.distanceTo(label.getPos())
+        // Only show if within acceptable distance ranges
+        if (d >= label.minVisibleDist && d <= label.maxVisibleDist) {
+          labelPos.copy(label.getPos())
+          labelPos.project(camera)
+
+          if (labelPos.z > 1) {
+            label.element.style.opacity = '0'
+          } else {
+            const x = (labelPos.x * 0.5 + 0.5) * window.innerWidth
+            const y = (-(labelPos.y * 0.5) + 0.5) * window.innerHeight
+            label.element.style.left = `${x}px`
+            label.element.style.top = `${y}px`
+            label.element.style.opacity = '1'
+            label.element.classList.remove('hidden-label')
+          }
+        } else {
+          label.element.style.opacity = '0'
+          // Delay hiding so opacity transition plays
+          if (label.element.style.opacity === '0') {
+            // label.element.classList.add('hidden-label') // optional
+          }
+        }
+      })
 
       bloomPass.strength = state.bloomStrength
       bloomPass.radius = state.bloomRadius
       bloomPass.threshold = state.bloomThreshold
+
       composer.render()
     },
   }

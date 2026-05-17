@@ -20,95 +20,173 @@ body {
   position: relative;
 }
 
-/* Earth overlay — "You are here" message */
-.earth-overlay {
+/* Scale Navigation Panel */
+.scale-nav {
   position: absolute;
-  bottom: 1.5rem;
-  left: 1.5rem;
-  right: 1.5rem;
-  max-width: 28rem;
-  pointer-events: none;
+  right: 2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   z-index: 10;
-}
-
-.earth-overlay .earth-message {
-  color: rgba(255, 255, 255, 0.75);
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  margin-bottom: 0.75rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
-
-.earth-overlay .earth-btn {
   pointer-events: auto;
-  padding: 0.5rem 1rem;
+}
+
+.scale-step {
+  color: rgba(255, 255, 255, 0.4);
+  font-family: system-ui, -apple-system, sans-serif;
   font-size: 0.85rem;
-  font-weight: 600;
-  color: #0a0a0a;
-  background: rgba(255, 255, 255, 0.9);
-  border: none;
-  border-radius: 6px;
+  font-weight: 500;
+  text-align: right;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
+  transition: all 0.3s ease;
+  position: relative;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
 }
 
-.earth-overlay .earth-btn:hover {
+.scale-step:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.scale-step.active {
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.scale-step::after {
+  content: '';
+  position: absolute;
+  right: -1.2rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.scale-step:hover::after {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.scale-step.active::after {
   background: #fff;
-  transform: translateY(-1px);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
 }
 
-.earth-overlay .earth-btn:active {
-  transform: translateY(0);
+.scale-line {
+  position: absolute;
+  right: -0.9rem;
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  z-index: -1;
+}
+
+/* Cinematic Controls */
+.cinematic-controls {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.play-btn {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  padding: 0.75rem 2rem;
+  border-radius: 30px;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.play-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.play-btn:active {
+  transform: scale(0.95);
 }
 
 /* 2D Floating Labels */
-.galaxy-label {
+.floating-label {
   position: absolute;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.8);
   font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   letter-spacing: 0.05em;
-  text-transform: uppercase;
-  pointer-events: none;
-  transform: translate(-50%, -50%);
-  transition: opacity 0.3s ease;
-  white-space: nowrap;
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
-}
-
-.galaxy-label.milky-way {
-  color: rgba(200, 230, 255, 0.9);
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.earth-label {
-  position: absolute;
-  color: #2c5bc9cf;
-  font-family: system-ui, -apple-system, sans-serif;
-  font-size: 0.75rem;
-  font-weight: 700;
   pointer-events: none;
   transform: translate(-50%, -150%);
   transition: opacity 0.3s ease;
   white-space: nowrap;
-  text-shadow: 0 0 8px rgba(100, 200, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
   opacity: 0;
+  z-index: 5;
 }
 
-.earth-label::after {
+.floating-label.highlight {
+  color: #aaddff;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(100, 200, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.floating-label::after {
   content: '';
   position: absolute;
   bottom: -12px;
   left: 50%;
   transform: translateX(-50%);
-  width: 2px;
+  width: 1px;
   height: 10px;
-  background: rgba(170, 221, 255, 0.6);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 /* Hide labels when they are behind the camera */
 .hidden-label {
   display: none !important;
+}
+
+/* Title Overlay */
+#title-overlay {
+  position: absolute;
+  top: 30px;
+  left: 40px;
+  z-index: 20;
+  pointer-events: none;
+}
+
+#animated-title {
+  font-family: 'Orbitron', system-ui, sans-serif;
+  color: #ffffff;
+  font-size: 2.2rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 0 15px rgba(100, 200, 255, 0.6), 0 0 30px rgba(100, 200, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 3px solid #ffffff;
+  margin: 0;
+  padding-right: 5px;
+  animation: blink-cursor 0.75s step-end infinite;
+}
+
+@keyframes blink-cursor {
+  from, to { border-color: transparent }
+  50% { border-color: #ffffff; }
 }
